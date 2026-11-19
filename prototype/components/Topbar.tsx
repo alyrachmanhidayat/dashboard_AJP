@@ -6,7 +6,8 @@ import { BellIcon } from "./icons";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard" },
-  { href: "/spk", label: "SPK Aktif" },
+  { href: "/po", label: "Purchase Order" },
+  { href: "/marker", label: "Marker" },
   { href: "/invoice", label: "Invoice" },
   { href: "/piutang", label: "Piutang" },
   { href: "/reports", label: "Laporan" },
@@ -14,7 +15,8 @@ const navItems = [
 
 const titles: Record<string, string> = {
   "/dashboard": "Dashboard",
-  "/spk": "Surat Perintah Kerja (SPK)",
+  "/po": "Purchase Order & Produksi",
+  "/marker": "Marker — Hitung Kebutuhan Kain Potong",
   "/invoice": "Penerbitan Invoice",
   "/piutang": "Piutang & Pembayaran",
   "/reports": "Laporan",
@@ -25,13 +27,13 @@ export default function Topbar() {
   const title = titles[pathname] ?? "Dashboard";
 
   return (
-    <header className="sticky top-0 z-10 border-b border-[#e1e0d9] bg-white/90 backdrop-blur">
+    <header className="sticky top-0 z-10 border-b border-[#e1e0d9] bg-white/90 backdrop-blur print:hidden">
       <div className="flex h-16 items-center justify-between gap-3 px-4 md:px-8">
         <div className="flex items-center gap-2.5 md:hidden">
           <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2a78d6] text-sm font-bold text-white">
-            IS
+            AC
           </div>
-          <span className="font-poppins text-base font-bold text-[#0b0b0b]">ISW Sportware</span>
+          <span className="font-poppins text-base font-bold text-[#0b0b0b]">Arah Creative</span>
         </div>
         <h1 className="hidden text-lg font-semibold text-[#0b0b0b] md:block">{title}</h1>
 

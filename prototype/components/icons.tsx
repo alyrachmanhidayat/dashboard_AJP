@@ -78,3 +78,21 @@ export function BellIcon({ className = base }: IconProps) {
     </svg>
   );
 }
+
+export function BoxIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <path d="M3.5 7.5 12 3l8.5 4.5v9L12 21l-8.5-4.5v-9Z" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+      <path d="M3.5 7.5 12 12l8.5-4.5M12 12v9" stroke="currentColor" strokeWidth="1.8" strokeLinejoin="round" />
+    </svg>
+  );
+}
+
+export function RulerIcon({ className = base }: IconProps) {
+  return (
+    <svg viewBox="0 0 24 24" fill="none" className={className}>
+      <rect x="2.5" y="8" width="19" height="8" rx="1.5" stroke="currentColor" strokeWidth="1.8" />
+      <path d="M6.5 8v3M10 8v4.5M13.5 8v3M17 8v4.5" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" />
+    </svg>
+  );
+}

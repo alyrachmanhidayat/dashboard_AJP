@@ -19,9 +19,9 @@ const poppins = Poppins({
 });
 
 export const metadata: Metadata = {
-  title: "ISW Sportware — Dashboard Konveksi",
+  title: "Arah Creative — Dashboard Konveksi",
   description:
-    "Prototipe tampilan Dashboard Konveksi: kelola SPK, progres produksi, invoice, piutang, dan laporan omzet dalam satu sistem.",
+    "Prototipe tampilan Dashboard Konveksi: kelola Purchase Order, marker kain, progres produksi, invoice, piutang, dan laporan omzet dalam satu sistem.",
 };
 
 export default function RootLayout({ children }: LayoutProps<"/">) {

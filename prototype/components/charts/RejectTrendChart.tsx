@@ -9,7 +9,7 @@ function CustomTooltip({ active, payload, label }: { active?: boolean; payload?:
   return (
     <div className="rounded-lg border border-[#e1e0d9] bg-white px-3 py-2 text-xs shadow-md">
       <p className="font-medium text-[#0b0b0b]">{label}</p>
-      <p className="mt-0.5 text-[#a8481f]">{payload[0].value} order ditolak</p>
+      <p className="mt-0.5 text-[#a8481f]">{payload[0].value} pcs reject / hilang</p>
     </div>
   );
 }

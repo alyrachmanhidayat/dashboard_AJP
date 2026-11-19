@@ -1,183 +1,107 @@
 "use client";
 
+import Link from "next/link";
 import { useState } from "react";
 import Badge from "@/components/Badge";
-import Modal from "@/components/Modal";
 import Toast from "@/components/Toast";
-import { formatNumber, formatRupiah } from "@/lib/format";
-import { closedNeedingPriceSpks, closedReadyForInvoiceSpks, type Spk } from "@/lib/dummy-data";
+import { formatDate, formatNumber, formatRupiah } from "@/lib/format";
+import { poTotalDp, poTotalInvoice, type Po } from "@/lib/po-data";
+import { usePoStore } from "@/lib/po-store";
 
-let invoiceSeq = 5;
+const itemQty = (item: Po["items"][number]) => item.variants.reduce((a, v) => a + v.sizes.reduce((b, s) => b + s.qty, 0), 0);
 
 export default function InvoicePage() {
-  const [needingPrice, setNeedingPrice] = useState<Spk[]>(closedNeedingPriceSpks);
-  const [ready, setReady] = useState<Spk[]>(closedReadyForInvoiceSpks);
-  const [selectedId, setSelectedId] = useState<number | null>(ready[0]?.id ?? null);
-  const [priceModalSpk, setPriceModalSpk] = useState<Spk | null>(null);
-  const [priceForm, setPriceForm] = useState({ pricePerMeter: "", hargaPerPiece: "" });
+  const { pos, invoices, publishInvoice } = usePoStore();
+  const ready = pos.filter((po) => po.terkirim && !invoices.some((i) => i.poId === po.id));
+  const inProduction = pos.filter((po) => !po.terkirim).length;
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [toast, setToast] = useState<string | null>(null);
+  const recent = invoices.filter((i) => pos.some((p) => p.id === i.poId));
 
   function showToast(message: string) {
     setToast(message);
     setTimeout(() => setToast(null), 3800);
   }
 
-  function openPriceModal(spk: Spk) {
-    setPriceModalSpk(spk);
-    setPriceForm({ pricePerMeter: "", hargaPerPiece: "" });
-  }
-
-  function savePrice(e: React.FormEvent) {
-    e.preventDefault();
-    if (!priceModalSpk) return;
-    if (!priceForm.pricePerMeter && !priceForm.hargaPerPiece) {
-      showToast("Isi minimal salah satu: harga per meter atau per piece.");
-      return;
-    }
-    const updated: Spk = {
-      ...priceModalSpk,
-      pricePerMeter: priceForm.pricePerMeter ? Number(priceForm.pricePerMeter) : null,
-      hargaPerPiece: priceForm.hargaPerPiece ? Number(priceForm.hargaPerPiece) : null,
-    };
-    setNeedingPrice((prev) => prev.filter((s) => s.id !== priceModalSpk.id));
-    setReady((prev) => [updated, ...prev]);
-    setPriceModalSpk(null);
-    showToast(`Harga untuk ${updated.spkNumber} tersimpan, siap diterbitkan invoice.`);
-  }
-
-  function publishInvoice() {
-    const spk = ready.find((s) => s.id === selectedId);
-    if (!spk) {
-      showToast("Pilih satu SPK terlebih dahulu.");
-      return;
-    }
-    const created: string[] = [];
-    if (spk.pricePerMeter) {
-      invoiceSeq += 1;
-      created.push(`INV/MTR/09/2026/${String(invoiceSeq).padStart(4, "0")}`);
-    }
-    if (spk.hargaPerPiece) {
-      invoiceSeq += 1;
-      created.push(`INV/QTY/09/2026/${String(invoiceSeq).padStart(4, "0")}`);
-    }
-    setReady((prev) => prev.filter((s) => s.id !== spk.id));
+  function publish() {
+    const po = ready.find((p) => p.id === selectedId);
+    if (!po) return showToast("Pilih satu PO terlebih dahulu.");
+    const inv = publishInvoice(po.id);
     setSelectedId(null);
-    showToast(`${created.length > 1 ? "2 invoice diterbitkan" : "Invoice diterbitkan"}: ${created.join(" & ")}`);
+    if (inv) showToast(`${inv.invoiceNumber} diterbitkan untuk ${po.namaPo} — ${formatRupiah(inv.totalAmount)}.`);
   }
 
   return (
     <div className="space-y-8">
-      {needingPrice.length > 0 && (
-        <section className="rounded-xl border border-[#e1e0d9] bg-white shadow-sm">
-          <div className="border-b border-[#e1e0d9] px-5 py-4">
-            <h2 className="text-sm font-semibold text-[#0b0b0b]">Menunggu Penentuan Harga</h2>
-            <p className="text-xs text-[#898781]">SPK yang sudah ditutup, belum punya harga per meter / per piece.</p>
-          </div>
-          <div className="overflow-x-auto">
-            <table className="w-full min-w-[720px] text-left text-sm">
-              <thead>
-                <tr className="border-b border-[#e1e0d9] text-xs uppercase tracking-wide text-[#898781]">
-                  <th className="px-5 py-3 font-medium">No. SPK / Order</th>
-                  <th className="px-5 py-3 font-medium">Total Meter</th>
-                  <th className="px-5 py-3 font-medium">Total Qty</th>
-                  <th className="px-5 py-3 font-medium" />
-                </tr>
-              </thead>
-              <tbody>
-                {needingPrice.map((spk) => (
-                  <tr key={spk.id} className="border-b border-[#eeede9] last:border-0 hover:bg-[#fafaf9]">
-                    <td className="px-5 py-3.5">
-                      <p className="font-medium text-[#0b0b0b]">{spk.spkNumber}</p>
-                      <p className="text-xs text-[#898781]">
-                        {spk.customerName} &middot; {spk.orderName}
-                      </p>
-                    </td>
-                    <td className="px-5 py-3.5 tabular-nums text-[#52514e]">{formatNumber(spk.totalMeter)} m</td>
-                    <td className="px-5 py-3.5 tabular-nums text-[#52514e]">{formatNumber(spk.totalQty)} pcs</td>
-                    <td className="px-5 py-3.5 text-right">
-                      <button
-                        onClick={() => openPriceModal(spk)}
-                        className="rounded-lg border border-[#2a78d6] px-3 py-1.5 text-xs font-medium text-[#1f5aa8] hover:bg-[#e9f1fc]"
-                      >
-                        Atur Harga
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        </section>
-      )}
-
       <section className="rounded-xl border border-[#e1e0d9] bg-white shadow-sm">
         <div className="flex flex-wrap items-center justify-between gap-3 border-b border-[#e1e0d9] px-5 py-4">
           <div>
-            <h2 className="text-sm font-semibold text-[#0b0b0b]">Siap Diterbitkan Invoice</h2>
+            <h2 className="text-sm font-semibold text-[#0b0b0b]">PO Terkirim — Siap Diterbitkan Invoice</h2>
             <p className="text-xs text-[#898781]">
-              Pilih satu SPK &mdash; sistem otomatis membuat 1 atau 2 invoice sesuai harga yang tersedia.
+              Nilai invoice = total PO (qty × harga jual per item) − semua DP yang sudah masuk.
             </p>
           </div>
           <button
-            onClick={publishInvoice}
+            onClick={publish}
             disabled={selectedId === null}
             className="rounded-lg bg-[#2a78d6] px-4 py-2.5 text-sm font-medium text-white shadow-sm hover:bg-[#1f5aa8] disabled:cursor-not-allowed disabled:bg-[#c3c2b7]"
           >
-            Terbitkan &amp; Cetak
+            Terbitkan Invoice
           </button>
         </div>
 
         {ready.length === 0 ? (
           <p className="px-5 py-10 text-center text-sm text-[#898781]">
-            Belum ada SPK yang siap diterbitkan invoice.
+            Belum ada PO terkirim yang menunggu invoice. {inProduction} PO masih dalam produksi —{" "}
+            <Link href="/po" className="font-medium text-[#1f5aa8] hover:underline">lihat PO</Link>.
           </p>
         ) : (
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[900px] text-left text-sm">
+            <table className="w-full min-w-[920px] text-left text-sm">
               <thead>
                 <tr className="border-b border-[#e1e0d9] text-xs uppercase tracking-wide text-[#898781]">
                   <th className="px-5 py-3 font-medium" />
-                  <th className="px-5 py-3 font-medium">No. SPK / Order</th>
-                  <th className="px-5 py-3 font-medium">Harga @ Meter / Piece</th>
-                  <th className="px-5 py-3 font-medium">Nilai Invoice</th>
-                  <th className="px-5 py-3 font-medium">Tipe</th>
+                  <th className="px-5 py-3 font-medium">No. PO / Nama</th>
+                  <th className="px-5 py-3 font-medium">Item × harga jual</th>
+                  <th className="px-5 py-3 text-right font-medium">Total PO</th>
+                  <th className="px-5 py-3 text-right font-medium">DP</th>
+                  <th className="px-5 py-3 text-right font-medium">Nilai invoice</th>
                 </tr>
               </thead>
               <tbody>
-                {ready.map((spk) => {
-                  const mtrValue = spk.pricePerMeter ? spk.totalMeter * spk.pricePerMeter : 0;
-                  const qtyValue = spk.hargaPerPiece ? spk.totalQty * spk.hargaPerPiece : 0;
+                {ready.map((po) => {
+                  const total = poTotalInvoice(po);
+                  const dp = poTotalDp(po);
                   return (
-                    <tr key={spk.id} className="border-b border-[#eeede9] last:border-0 hover:bg-[#fafaf9]">
+                    <tr
+                      key={po.id}
+                      onClick={() => setSelectedId(po.id)}
+                      className="cursor-pointer border-b border-[#eeede9] align-top last:border-0 hover:bg-[#fafaf9]"
+                    >
                       <td className="px-5 py-3.5">
                         <input
                           type="radio"
-                          name="selected-spk"
-                          checked={selectedId === spk.id}
-                          onChange={() => setSelectedId(spk.id)}
+                          name="selected-po"
+                          checked={selectedId === po.id}
+                          onChange={() => setSelectedId(po.id)}
                           className="h-4 w-4 accent-[#2a78d6]"
+                          aria-label={`Pilih ${po.namaPo}`}
                         />
                       </td>
                       <td className="px-5 py-3.5">
-                        <p className="font-medium text-[#0b0b0b]">{spk.spkNumber}</p>
-                        <p className="text-xs text-[#898781]">
-                          {spk.customerName} &middot; {spk.orderName}
-                        </p>
+                        <p className="font-medium text-[#0b0b0b]">{po.namaPo}</p>
+                        <p className="text-xs text-[#898781]">{po.noPo} · {po.brand}</p>
                       </td>
                       <td className="px-5 py-3.5 text-[#52514e]">
-                        {spk.pricePerMeter && <p>{formatRupiah(spk.pricePerMeter)} / m</p>}
-                        {spk.hargaPerPiece && <p>{formatRupiah(spk.hargaPerPiece)} / pcs</p>}
+                        {po.items.map((item) => (
+                          <p key={item.id}>
+                            {item.artikel}: {formatNumber(itemQty(item))} pcs × {formatRupiah(item.hargaJual)}
+                          </p>
+                        ))}
                       </td>
-                      <td className="px-5 py-3.5 text-[#0b0b0b]">
-                        {mtrValue > 0 && <p>{formatRupiah(mtrValue)} (MTR)</p>}
-                        {qtyValue > 0 && <p>{formatRupiah(qtyValue)} (QTY)</p>}
-                      </td>
-                      <td className="px-5 py-3.5">
-                        <div className="flex gap-1.5">
-                          {spk.pricePerMeter && <Badge tone="info">MTR</Badge>}
-                          {spk.hargaPerPiece && <Badge tone="violet">QTY</Badge>}
-                        </div>
-                      </td>
+                      <td className="px-5 py-3.5 text-right tabular-nums text-[#52514e]">{formatRupiah(total)}</td>
+                      <td className="px-5 py-3.5 text-right tabular-nums text-[#52514e]">− {formatRupiah(dp)}</td>
+                      <td className="px-5 py-3.5 text-right font-semibold tabular-nums text-[#0b0b0b]">{formatRupiah(total - dp)}</td>
                     </tr>
                   );
                 })}
@@ -187,45 +111,30 @@ export default function InvoicePage() {
         )}
       </section>
 
-      <Modal open={!!priceModalSpk} onClose={() => setPriceModalSpk(null)} title={`Atur Harga — ${priceModalSpk?.spkNumber ?? ""}`}>
-        <form onSubmit={savePrice} className="space-y-4">
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium text-[#52514e]">Harga per Meter (Rp)</span>
-            <input
-              type="number"
-              min={0}
-              value={priceForm.pricePerMeter}
-              onChange={(e) => setPriceForm({ ...priceForm, pricePerMeter: e.target.value })}
-              className="w-full rounded-lg border border-[#e1e0d9] px-3 py-2 text-sm outline-none focus:border-[#2a78d6]"
-              placeholder="cth. 48000"
-            />
-          </label>
-          <label className="block text-sm">
-            <span className="mb-1 block font-medium text-[#52514e]">Harga per Piece (Rp)</span>
-            <input
-              type="number"
-              min={0}
-              value={priceForm.hargaPerPiece}
-              onChange={(e) => setPriceForm({ ...priceForm, hargaPerPiece: e.target.value })}
-              className="w-full rounded-lg border border-[#e1e0d9] px-3 py-2 text-sm outline-none focus:border-[#2a78d6]"
-              placeholder="cth. 62000"
-            />
-          </label>
-          <p className="text-xs text-[#898781]">Isi minimal salah satu. Setelah disimpan, harga tidak dapat diubah lagi.</p>
-          <div className="flex justify-end gap-2 pt-1">
-            <button
-              type="button"
-              onClick={() => setPriceModalSpk(null)}
-              className="rounded-lg px-4 py-2 text-sm font-medium text-[#52514e] hover:bg-[#f4f3f0]"
-            >
-              Batal
-            </button>
-            <button type="submit" className="rounded-lg bg-[#2a78d6] px-4 py-2 text-sm font-medium text-white hover:bg-[#1f5aa8]">
-              Simpan Harga
-            </button>
-          </div>
-        </form>
-      </Modal>
+      <section className="rounded-xl border border-[#e1e0d9] bg-white shadow-sm">
+        <div className="flex items-center justify-between border-b border-[#e1e0d9] px-5 py-4">
+          <h2 className="text-sm font-semibold text-[#0b0b0b]">Invoice Terbit dari PO</h2>
+          <Link href="/piutang" className="text-xs font-medium text-[#1f5aa8] hover:underline">Kelola pembayaran di Piutang →</Link>
+        </div>
+        {recent.length === 0 ? (
+          <p className="px-5 py-8 text-center text-sm text-[#898781]">Belum ada invoice yang diterbitkan di sesi demo ini.</p>
+        ) : (
+          <ul className="divide-y divide-[#eeede9]">
+            {recent.map((inv) => (
+              <li key={inv.id} className="flex flex-wrap items-center justify-between gap-2 px-5 py-3 text-sm">
+                <span>
+                  <span className="font-medium text-[#0b0b0b]">{inv.invoiceNumber}</span>
+                  <span className="text-[#898781]"> · {inv.namaPo} · {formatDate(inv.issuedDate)}</span>
+                </span>
+                <span className="flex items-center gap-2">
+                  <span className="tabular-nums">{formatRupiah(inv.totalAmount)}</span>
+                  <Badge tone={inv.isPaid ? "good" : "warning"}>{inv.isPaid ? "Lunas" : "Belum lunas"}</Badge>
+                </span>
+              </li>
+            ))}
+          </ul>
+        )}
+      </section>
 
       {toast && <Toast message={toast} />}
     </div>

@@ -2,11 +2,12 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ChartIcon, ClipboardIcon, GridIcon, HomeIcon, ReceiptIcon, WalletIcon } from "./icons";
+import { BoxIcon, ChartIcon, GridIcon, HomeIcon, ReceiptIcon, RulerIcon, WalletIcon } from "./icons";
 
 const navItems = [
   { href: "/dashboard", label: "Dashboard", icon: GridIcon },
-  { href: "/spk", label: "SPK Aktif", icon: ClipboardIcon },
+  { href: "/po", label: "Purchase Order", icon: BoxIcon },
+  { href: "/marker", label: "Marker", icon: RulerIcon },
   { href: "/invoice", label: "Invoice", icon: ReceiptIcon },
   { href: "/piutang", label: "Piutang", icon: WalletIcon },
   { href: "/reports", label: "Laporan", icon: ChartIcon },
@@ -16,12 +17,12 @@ export default function Sidebar() {
   const pathname = usePathname();
 
   return (
-    <aside className="hidden w-64 shrink-0 flex-col border-r border-[#e1e0d9] bg-white md:flex">
+    <aside className="hidden w-64 shrink-0 flex-col border-r border-[#e1e0d9] bg-white md:flex print:hidden">
       <div className="flex h-16 items-center gap-2.5 border-b border-[#e1e0d9] px-6">
         <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2a78d6] text-sm font-bold text-white">
-          IS
+          AC
         </div>
-        <span className="font-poppins text-lg font-bold text-[#0b0b0b]">ISW Sportware</span>
+        <span className="font-poppins text-lg font-bold text-[#0b0b0b]">Arah Creative</span>
       </div>
 
       <nav className="flex-1 space-y-1 px-3 py-5">

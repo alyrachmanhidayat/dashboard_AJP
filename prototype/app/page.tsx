@@ -1,12 +1,12 @@
 import Link from "next/link";
-import { ChartIcon, ClipboardIcon, GridIcon, ReceiptIcon, WalletIcon } from "@/components/icons";
+import { BoxIcon, ChartIcon, GridIcon, ReceiptIcon, RulerIcon, WalletIcon } from "@/components/icons";
 
 const flow = [
-  { title: "Buat SPK", desc: "Input customer, ukuran, material, dan tanggal kirim dalam satu form." },
-  { title: "Lacak Progres", desc: "Pantau tahapan desain, print, press, hingga pengiriman secara real-time." },
-  { title: "Tutup / Reject", desc: "Finalisasi order yang selesai atau ditolak dengan validasi otomatis." },
-  { title: "Atur Harga", desc: "Tetapkan harga per meter dan/atau per piece sesuai model bisnis." },
-  { title: "Terbitkan Invoice", desc: "1 atau 2 invoice otomatis dibuat sesuai kombinasi harga." },
+  { title: "Buat PO", desc: "Satu PO bisa berisi banyak item, banyak warna, dan ukuran custom per warna." },
+  { title: "Bahan & DP", desc: "Catat bahan masuk (kg) dan DP bertahap — berupa bahan maupun uang." },
+  { title: "Marker", desc: "Hitung kebutuhan kain per warna dalam yard, lengkap dengan cetak laporan marker." },
+  { title: "Produksi 8 Tahap", desc: "Cutting, sablon, sewing, finishing, sampai kirim — reject & hilang tercatat per SKU." },
+  { title: "Terbitkan Invoice", desc: "Nilai invoice otomatis: total PO dikurangi seluruh DP." },
   { title: "Kelola Piutang", desc: "Catat pembayaran bertahap hingga lunas, lengkap dengan riwayat." },
 ];
 
@@ -19,16 +19,23 @@ const features = [
     accent: "text-[#1f5aa8] bg-[#e9f1fc]",
   },
   {
-    icon: ClipboardIcon,
-    title: "Manajemen SPK",
-    desc: "Buat dan lacak Surat Perintah Kerja lengkap dengan rincian ukuran, material, dan tahapan produksi.",
-    href: "/spk",
+    icon: BoxIcon,
+    title: "Purchase Order & Produksi",
+    desc: "PO multi-item multi-warna, DP bertahap, 8 tahap produksi, serta kalkulasi HPP, margin, dan fee per PO.",
+    href: "/po",
     accent: "text-[#4a3aa7] bg-[#eeecfa]",
   },
   {
+    icon: RulerIcon,
+    title: "Marker Kain",
+    desc: "Rasio, panjang, dan ampar per marker menghasilkan kebutuhan kain (yard) yang jadi patokan tahap Cutting.",
+    href: "/marker",
+    accent: "text-[#8a5a00] bg-[#fef3dc]",
+  },
+  {
     icon: ReceiptIcon,
-    title: "Invoice Dual-Harga",
-    desc: "Dukung penagihan berbasis meter kain dan/atau per piece dalam satu order — otomatis membuat invoice terpisah.",
+    title: "Invoice dari PO",
+    desc: "Satu invoice per PO: harga jual per item dikali qty, dikurangi semua DP yang sudah masuk.",
     href: "/invoice",
     accent: "text-[#a8481f] bg-[#fbe9e0]",
   },
@@ -55,9 +62,9 @@ export default function LandingPage() {
         <div className="mx-auto flex h-16 max-w-6xl items-center justify-between px-4 md:px-8">
           <div className="flex items-center gap-2.5">
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-[#2a78d6] text-sm font-bold text-white">
-              IS
+              AC
             </div>
-            <span className="font-poppins text-lg font-bold text-[#0b0b0b]">ISW Sportware</span>
+            <span className="font-poppins text-lg font-bold text-[#0b0b0b]">Arah Creative</span>
           </div>
           <Link
             href="/dashboard"
@@ -77,8 +84,8 @@ export default function LandingPage() {
             Satu Dashboard untuk Seluruh Alur Produksi Konveksi
           </h1>
           <p className="mx-auto mt-5 max-w-2xl text-base text-[#52514e] md:text-lg">
-            Dari SPK, pelacakan progres produksi, penerbitan invoice dengan skema harga per meter
-            maupun per piece, sampai piutang dan laporan omzet &mdash; semua dalam satu sistem yang
+            Dari Purchase Order, perhitungan marker kain, pelacakan 8 tahap produksi, penerbitan
+            invoice dikurangi DP, sampai piutang dan laporan omzet &mdash; semua dalam satu sistem yang
             rapi dan mudah dipantau tim.
           </p>
           <div className="mt-8 flex flex-wrap items-center justify-center gap-3">
@@ -165,7 +172,7 @@ export default function LandingPage() {
       </main>
 
       <footer className="border-t border-[#e1e0d9] px-4 py-6 text-center text-xs text-[#898781] md:px-8">
-        ISW Sportware &middot; Dashboard Konveksi &mdash; prototipe tampilan, seluruh data bersifat contoh.
+        Arah Creative &middot; Dashboard Konveksi &mdash; prototipe tampilan, seluruh data bersifat contoh.
       </footer>
     </div>
   );

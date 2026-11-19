@@ -1,26 +1,32 @@
 "use client";
 
 import { useState } from "react";
+import Badge from "@/components/Badge";
 import RejectTrendChart from "@/components/charts/RejectTrendChart";
 import RevenueTrendChart from "@/components/charts/RevenueTrendChart";
 import StatCard from "@/components/StatCard";
+import { omzetTrend, rejectTrend } from "@/lib/dummy-data";
 import { formatDate, formatNumber, formatRupiah } from "@/lib/format";
-import { omzetTrend, paidInvoices, rejectTrend, rejectedSpks } from "@/lib/dummy-data";
+import { lossRecords } from "@/lib/po-data";
+import { usePoStore } from "@/lib/po-store";
 
 const tabs = [
   { key: "omzet", label: "Rekap Omzet" },
-  { key: "reject", label: "Rekap Reject" },
+  { key: "reject", label: "Rekap Reject & Hilang" },
 ] as const;
+
+const kategoriTone = { reject: "critical", hilang: "warning", stok: "info" } as const;
 
 export default function ReportsPage() {
   const [tab, setTab] = useState<(typeof tabs)[number]["key"]>("omzet");
+  const { invoices } = usePoStore();
+  const paid = invoices.filter((i) => i.isPaid);
 
-  const rejectNominal = rejectedSpks.reduce(
-    (sum, spk) => sum + spk.totalMeter * (spk.pricePerMeter ?? 0),
-    0
-  );
-  const rejectQty = rejectedSpks.reduce((sum, spk) => sum + spk.totalQty, 0);
-  const rejectMeter = rejectedSpks.reduce((sum, spk) => sum + spk.totalMeter, 0);
+  const sumQty = (k: "reject" | "hilang" | "stok") =>
+    lossRecords.filter((r) => r.kategori === k).reduce((a, r) => a + r.qty, 0);
+  const lostNominal = lossRecords
+    .filter((r) => r.kategori !== "stok")
+    .reduce((a, r) => a + r.qty * r.hargaJual, 0);
 
   return (
     <div className="space-y-6">
@@ -41,10 +47,10 @@ export default function ReportsPage() {
       {tab === "omzet" ? (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Order Selesai (Sep 2026)" value="18" accent="blue" />
+            <StatCard label="PO Selesai (Sep 2026)" value="18" accent="blue" />
             <StatCard label="Total Omzet (Sep 2026)" value={formatRupiah(143_800_000)} accent="good" />
             <StatCard label="Total Qty (Sep 2026)" value={`${formatNumber(2140)} pcs`} accent="violet" />
-            <StatCard label="Total Meter (Sep 2026)" value={`${formatNumber(1385)} m`} accent="orange" />
+            <StatCard label="Pemakaian Kain (Sep 2026)" value={`${formatNumber(1512)} yd`} accent="orange" />
           </div>
 
           <div className="rounded-xl border border-[#e1e0d9] bg-white p-5 shadow-sm">
@@ -63,17 +69,20 @@ export default function ReportsPage() {
                 <thead>
                   <tr className="border-b border-[#e1e0d9] text-xs uppercase tracking-wide text-[#898781]">
                     <th className="px-5 py-3 font-medium">No. Invoice</th>
-                    <th className="px-5 py-3 font-medium">Customer</th>
-                    <th className="px-5 py-3 font-medium">Total</th>
+                    <th className="px-5 py-3 font-medium">Brand / PO</th>
+                    <th className="px-5 py-3 font-medium">Total PO</th>
                     <th className="px-5 py-3 font-medium">Tanggal</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {paidInvoices.map((inv) => (
+                  {paid.map((inv) => (
                     <tr key={inv.id} className="border-b border-[#eeede9] last:border-0">
                       <td className="px-5 py-3.5 font-medium text-[#0b0b0b]">{inv.invoiceNumber}</td>
-                      <td className="px-5 py-3.5 text-[#52514e]">{inv.customerName}</td>
-                      <td className="px-5 py-3.5 tabular-nums text-[#52514e]">{formatRupiah(inv.totalAmount)}</td>
+                      <td className="px-5 py-3.5">
+                        <p className="text-[#0b0b0b]">{inv.brand}</p>
+                        <p className="text-xs text-[#898781]">{inv.noPo} · {inv.namaPo}</p>
+                      </td>
+                      <td className="px-5 py-3.5 tabular-nums text-[#52514e]">{formatRupiah(inv.totalPo)}</td>
                       <td className="px-5 py-3.5 text-[#52514e]">{formatDate(inv.issuedDate)}</td>
                     </tr>
                   ))}
@@ -85,14 +94,14 @@ export default function ReportsPage() {
       ) : (
         <div className="space-y-6">
           <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 xl:grid-cols-4">
-            <StatCard label="Order Ditolak (Sep 2026)" value={String(rejectedSpks.length)} accent="critical" />
-            <StatCard label="Total Nominal" value={formatRupiah(rejectNominal)} accent="critical" />
-            <StatCard label="Total Qty" value={`${formatNumber(rejectQty)} pcs`} accent="warning" />
-            <StatCard label="Total Meter" value={`${formatNumber(rejectMeter)} m`} accent="warning" />
+            <StatCard label="Reject (pcs)" value={formatNumber(sumQty("reject"))} hint="Rusak, tidak bisa dijual" accent="critical" />
+            <StatCard label="Hilang (pcs)" value={formatNumber(sumQty("hilang"))} hint="Selisih serah terima" accent="warning" />
+            <StatCard label="Masuk Stok (pcs)" value={formatNumber(sumQty("stok"))} hint="Lebih produksi, jadi stok" accent="blue" />
+            <StatCard label="Nilai Reject + Hilang" value={formatRupiah(lostNominal)} hint="Qty × harga jual" accent="critical" />
           </div>
 
           <div className="rounded-xl border border-[#e1e0d9] bg-white p-5 shadow-sm">
-            <h2 className="text-sm font-semibold text-[#0b0b0b]">Tren Reject 12 Bulan Terakhir</h2>
+            <h2 className="text-sm font-semibold text-[#0b0b0b]">Tren Reject & Hilang 12 Bulan Terakhir (pcs)</h2>
             <div className="mt-3">
               <RejectTrendChart data={rejectTrend} />
             </div>
@@ -100,28 +109,41 @@ export default function ReportsPage() {
 
           <div className="rounded-xl border border-[#e1e0d9] bg-white shadow-sm">
             <div className="border-b border-[#e1e0d9] px-5 py-4">
-              <h2 className="text-sm font-semibold text-[#0b0b0b]">SPK Ditolak</h2>
+              <h2 className="text-sm font-semibold text-[#0b0b0b]">Catatan Barang Lost per SKU</h2>
+              <p className="text-xs text-[#898781]">
+                Mulai tahap Sewing, barang yang kurang dikategorikan stok, reject, atau hilang. Reject & hilang wajib ada
+                alasan dan PIC untuk audit.
+              </p>
             </div>
             <div className="overflow-x-auto">
-              <table className="w-full min-w-[760px] text-left text-sm">
+              <table className="w-full min-w-[1000px] text-left text-sm">
                 <thead>
                   <tr className="border-b border-[#e1e0d9] text-xs uppercase tracking-wide text-[#898781]">
-                    <th className="px-5 py-3 font-medium">No. SPK</th>
-                    <th className="px-5 py-3 font-medium">Customer / Order</th>
-                    <th className="px-5 py-3 font-medium">Total Meter</th>
-                    <th className="px-5 py-3 font-medium">Tanggal Ditolak</th>
+                    <th className="px-5 py-3 font-medium">Tanggal / Tahap</th>
+                    <th className="px-5 py-3 font-medium">PO</th>
+                    <th className="px-5 py-3 font-medium">SKU</th>
+                    <th className="px-5 py-3 text-right font-medium">Qty</th>
+                    <th className="px-5 py-3 font-medium">Kategori</th>
+                    <th className="px-5 py-3 font-medium">Alasan</th>
+                    <th className="px-5 py-3 font-medium">PIC</th>
                   </tr>
                 </thead>
                 <tbody>
-                  {rejectedSpks.map((spk) => (
-                    <tr key={spk.id} className="border-b border-[#eeede9] last:border-0">
-                      <td className="px-5 py-3.5 font-medium text-[#0b0b0b]">{spk.spkNumber}</td>
+                  {lossRecords.map((r) => (
+                    <tr key={r.id} className="border-b border-[#eeede9] align-top last:border-0">
                       <td className="px-5 py-3.5">
-                        <p className="text-[#0b0b0b]">{spk.customerName}</p>
-                        <p className="text-xs text-[#898781]">{spk.orderName}</p>
+                        <p className="text-[#0b0b0b]">{formatDate(r.tanggal)}</p>
+                        <p className="text-xs text-[#898781]">{r.tahap}</p>
                       </td>
-                      <td className="px-5 py-3.5 tabular-nums text-[#52514e]">{formatNumber(spk.totalMeter)} m</td>
-                      <td className="px-5 py-3.5 text-[#52514e]">{formatDate(spk.closedDate ?? spk.deliveryDate)}</td>
+                      <td className="px-5 py-3.5">
+                        <p className="text-[#0b0b0b]">{r.namaPo}</p>
+                        <p className="text-xs text-[#898781]">{r.noPo}</p>
+                      </td>
+                      <td className="px-5 py-3.5 text-[#52514e]">{r.artikel} · {r.warna} · {r.size}</td>
+                      <td className="px-5 py-3.5 text-right tabular-nums">{r.qty}</td>
+                      <td className="px-5 py-3.5"><Badge tone={kategoriTone[r.kategori]}>{r.kategori}</Badge></td>
+                      <td className="px-5 py-3.5 text-[#52514e]">{r.alasan}</td>
+                      <td className="px-5 py-3.5 text-[#52514e]">{r.pic}</td>
                     </tr>
                   ))}
                 </tbody>
